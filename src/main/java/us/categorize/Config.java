@@ -69,7 +69,7 @@ public class Config {
 		fileBase = staticDir + "/files";
 	}
 	
-	public Connection initialize() throws Exception{
+	public Connection getDatabaseConnection() throws Exception{
 		if(repositoryType==null || !"sql".equals(repositoryType.toLowerCase())){
 			throw new Exception(repositoryType + " is not a known repository type, exiting");
 		}

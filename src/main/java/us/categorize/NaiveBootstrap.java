@@ -15,7 +15,7 @@ public class NaiveBootstrap {
 	public static void main(String[] args) throws Exception {
 		Config config = Config.readRelativeConfig();
 		
-		Configuration.instance().setMessageStore(new NaiveMessageStore());
+		Configuration.instance().setMessageStore(new NaiveMessageStore(config.getDatabaseConnection()));
 		Configuration.instance().setUserStore(new NaiveUserStore());
         Server server = new Server(8080);
 
