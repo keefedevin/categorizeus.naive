@@ -11,4 +11,16 @@ public class NaiveUserStore implements UserStore {
 		return null;
 	}
 
+	@Override
+	public boolean registerUser(User user) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean establishUserSession(User user) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
 }
