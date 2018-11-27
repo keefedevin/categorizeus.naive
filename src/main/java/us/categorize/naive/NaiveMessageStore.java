@@ -1,5 +1,6 @@
 package us.categorize.naive;
 
+import java.sql.Array;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -60,6 +61,35 @@ public class NaiveMessageStore implements MessageStore {
 	@Override
 	public Message[] tagSearch(String[] tagStrings) {
 		Tag[] tags = tagsToObjects(tagStrings);
+		Long tagIds[] = new Long[tags.length];
+		String questions = "";
+		for(int i=0; i<tags.length;i++) {
+			tagIds[i] = tags[i].getId();
+			if(i!=0) questions = questions+",";//TODO obviously gnarly but don't optimize yet
+			questions = questions+"?";
+		}
+	
+		String tagSearch = "select messages.* from messages, message_tags where messages.id = message_tags.message_id and tag_id in ("+questions+") group by messages.id";
+		try {
+			PreparedStatement stmt = connection.prepareStatement(tagSearch);
+			//Array arr = stmt.getConnection().createArrayOf("bigint", tagIds);
+			//  Hint: No operator matches the given name and argument types. You might need to add explicit type casts.
+			//org.postgresql.util.PSQLException: ERROR: operator does not exist: bigint = bigint[]
+			for(int i=0; i<tags.length;i++) {
+				stmt.setLong(i+1, tags[i].getId());
+			}
+			ResultSet rs = stmt.executeQuery();
+			List<Message> messages = new LinkedList<>();
+			while(rs.next()) {
+				messages.add(mapMessageRow(new Message(), rs));
+			}
+			Message messageArr[] = messages.toArray(new Message[messages.size()]);
+			return messageArr;
+			
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return null;
 	}
 
@@ -98,6 +128,7 @@ public class NaiveMessageStore implements MessageStore {
 	}
 	
     private Message mapMessageRow(Message message, ResultSet rs) throws SQLException {
+    	message.setId(rs.getLong("id"));
 		message.setBody(rs.getString("body"));
 		message.setTitle(rs.getString("title"));
 		message.setPostedBy(rs.getLong("posted_by"));
@@ -142,25 +173,76 @@ public class NaiveMessageStore implements MessageStore {
 
 	@Override
 	public boolean deleteMessage(long id) {
-		// TODO Auto-generated method stub
+		String deleteMessage = "delete from messages where message_id = ?";
+		String deleteTags = "delete from message_tags where message_id=?";
+		try {
+			PreparedStatement stmt = connection.prepareStatement(deleteMessage);
+			stmt.setLong(1, id);
+			stmt.executeUpdate();
+			stmt = connection.prepareStatement(deleteTags);
+			stmt.setLong(1, id);
+			stmt.executeUpdate();
+			return true;
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return false;
+		
 	}
 
 	@Override
-	public boolean tagMessage(long id, String[] tags) {
-		// TODO Auto-generated method stub
-		return false;
+	public boolean tagMessage(long id, String[] tagStrings) {
+		String clearOldTags = "delete from message_tags where message_id=?";
+		PreparedStatement stmt;
+		try {
+			stmt = connection.prepareStatement(clearOldTags);
+			stmt.setLong(1, id);
+			stmt.executeUpdate();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		Tag[] tags = tagsToObjects(tagStrings);
+		for(Tag t : tags) {
+			tagMessage(id, t);
+		}
+		return true;
 	}
 
 	@Override
 	public boolean addMessageTag(long id, String tag) {
-		// TODO Auto-generated method stub
+		return tagMessage(id, tagFor(tag));
+	}
+	private boolean tagMessage(long id, Tag tag) {
+		String tagStatement = "insert into message_tags(message_id, tag_id) values (?,?)";
+		try {
+			PreparedStatement stmt = connection.prepareStatement(tagStatement);
+			stmt.setLong(1, id);
+			stmt.setLong(2, tag.getId());
+			stmt.executeUpdate();
+			return true;
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block, this is particularly important because of unique constraint violations
+			e.printStackTrace();
+		}
+
 		return false;
 	}
-
 	@Override
 	public boolean removeMessageTag(long id, String tag) {
-		// TODO Auto-generated method stub
+		String deleteTag = "delete from message_tags where message_id=? and tag_id=?";
+		Tag tagO = tagFor(tag);
+		try {
+			PreparedStatement stmt = connection.prepareStatement(deleteTag);
+			stmt.setLong(1, id);
+			stmt.setLong(2, tagO.getId());
+			stmt.executeUpdate();
+			return true;
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return false;
 	}
 	
