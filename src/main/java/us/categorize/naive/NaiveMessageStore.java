@@ -6,11 +6,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.util.LinkedList;
+import java.util.List;
 
 import us.categorize.api.MessageStore;
 import us.categorize.model.Message;
 import us.categorize.model.Tag;
-import us.categorize.model.User;
 
 public class NaiveMessageStore implements MessageStore {
 
@@ -107,8 +108,36 @@ public class NaiveMessageStore implements MessageStore {
 
 	@Override
 	public Message[] readMessageThread(long id) {
-		// TODO Auto-generated method stub
-		return null;
+        try{
+            String findMessage = "select * from messages where root_replies_to=?";
+    		PreparedStatement stmt = connection.prepareStatement(findMessage);
+    		stmt.setLong(1, id);
+    		ResultSet rs = stmt.executeQuery();
+    		List<Message> thread = new LinkedList<Message>();
+    		while(rs.next()){
+    		    thread.add(mapMessageRow(new Message(), rs));
+    		}
+    		Message[] threadArr = thread.toArray(new Message[thread.size()]);
+    		return threadArr;
+    		/*
+    		//continuing to be extremely inefficient, let's do ANOTHER query
+    		//curious if doing another query vs doing a join above would lead to more efficient results
+    		String findTags = "select * from message_tags, tags where message_tags.tag_id=tags.id AND message_id = ?";
+    		PreparedStatement findTagsStmt = connection.prepareStatement(findTags);
+    		findTagsStmt.setLong(1, message.getId());
+    		rs = findTagsStmt.executeQuery();
+    		while(rs.next()){
+    			Tag tag = new Tag(rs.getLong("id"), rs.getString("tag"));
+    			message.getTags().add(tag);
+    		}
+    		if(!read(message.getPostedBy())){
+    			System.out.println("Message Poster Not Found in Database " + message.getPostedBy());
+    		}
+    		return true;*/
+        }catch(SQLException sqe){
+            sqe.printStackTrace();
+        }
+        return null;
 	}
 
 	@Override
