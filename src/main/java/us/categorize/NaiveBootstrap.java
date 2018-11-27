@@ -13,6 +13,8 @@ import us.categorize.naive.NaiveUserStore;
 public class NaiveBootstrap {
 
 	public static void main(String[] args) throws Exception {
+		Config config = Config.readRelativeConfig();
+		
 		Configuration.instance().setMessageStore(new NaiveMessageStore());
 		Configuration.instance().setUserStore(new NaiveUserStore());
         Server server = new Server(8080);
