@@ -7,7 +7,6 @@ public class NaiveMessageStore implements MessageStore {
 
 	@Override
 	public Message createMessage(Message message) {
-		message.setInternalId("subclass message");
 		return message;
 	}
 
@@ -18,37 +17,37 @@ public class NaiveMessageStore implements MessageStore {
 	}
 
 	@Override
-	public Message readMessage(String id) {
+	public Message readMessage(long id) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public Message[] readMessageThread(String id) {
+	public Message[] readMessageThread(long id) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public boolean deleteMessage(String id) {
+	public boolean deleteMessage(long id) {
 		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
-	public boolean tagMessage(String id, String[] tags) {
+	public boolean tagMessage(long id, String[] tags) {
 		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
-	public boolean addMessageTag(String id, String tag) {
+	public boolean addMessageTag(long id, String tag) {
 		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
-	public boolean removeMessageTag(String id, String tag) {
+	public boolean removeMessageTag(long id, String tag) {
 		// TODO Auto-generated method stub
 		return false;
 	}
