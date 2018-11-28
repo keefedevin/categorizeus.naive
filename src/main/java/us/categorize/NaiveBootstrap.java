@@ -5,6 +5,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.servlet.ServletContainer;
 
+import us.categorize.api.AuthorizerStubImpl;
 import us.categorize.api.MessageStoreStubImpl;
 import us.categorize.api.UserStoreStubImpl;
 import us.categorize.naive.NaiveMessageStore;
@@ -17,6 +18,8 @@ public class NaiveBootstrap {
 		
 		Configuration.instance().setMessageStore(new NaiveMessageStore(config.getDatabaseConnection()));
 		Configuration.instance().setUserStore(new NaiveUserStore(config.getDatabaseConnection()));
+		Configuration.instance().setAuthorizer(new AuthorizerStubImpl());
+
         Server server = new Server(8080);
 
         ServletContextHandler ctx = 
