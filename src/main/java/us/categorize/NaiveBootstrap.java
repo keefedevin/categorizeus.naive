@@ -16,7 +16,7 @@ public class NaiveBootstrap {
 		Config config = Config.readRelativeConfig();
 		
 		Configuration.instance().setMessageStore(new NaiveMessageStore(config.getDatabaseConnection()));
-		Configuration.instance().setUserStore(new NaiveUserStore());
+		Configuration.instance().setUserStore(new NaiveUserStore(config.getDatabaseConnection()));
         Server server = new Server(8080);
 
         ServletContextHandler ctx = 
