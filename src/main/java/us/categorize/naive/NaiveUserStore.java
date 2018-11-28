@@ -85,8 +85,16 @@ public class NaiveUserStore implements UserStore {
 	@Override
 	public boolean establishUserSession(User user, String sessionKey) {
 		String createUserSession = "insert into user_sessions(session_uuid, user_id) values (?,?)";
+		String findUser = "select * from users where username=? and passhash=?";
 		try{
-			PreparedStatement stmt = connection.prepareStatement(createUserSession);
+			PreparedStatement stmt = connection.prepareStatement(findUser);
+			stmt.setString(1, user.getUsername());
+			stmt.setString(2, user.getPasshash());
+			ResultSet rs = stmt.executeQuery();
+			if(!(rs!=null && rs.next())){
+				return false;		
+			}
+			stmt = connection.prepareStatement(createUserSession);
 			stmt.setString(1,sessionKey);
 			stmt.setLong(2, user.getId());
 			stmt.executeUpdate();
