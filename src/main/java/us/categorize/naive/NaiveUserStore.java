@@ -81,7 +81,7 @@ public class NaiveUserStore implements UserStore {
 	}
 	
 	
-
+	//TODO the login validation part probably doesn't belong here, think about this after doing the OAuth integration
 	@Override
 	public boolean establishUserSession(User user, String sessionKey) {
 		String createUserSession = "insert into user_sessions(session_uuid, user_id) values (?,?)";
