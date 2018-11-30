@@ -10,15 +10,19 @@ import java.util.LinkedList;
 import java.util.List;
 
 import us.categorize.api.MessageStore;
+import us.categorize.api.UserStore;
 import us.categorize.model.Message;
+import us.categorize.model.MetaMessage;
 import us.categorize.model.Tag;
 
 public class NaiveMessageStore implements MessageStore {
 
 	private Connection connection;
+	private UserStore userStore;
 		
-	public NaiveMessageStore(Connection connection) {
+	public NaiveMessageStore(Connection connection, UserStore userStore) {
 		this.connection = connection;
+		this.userStore = userStore;
 	}
 	
 	@Override
@@ -94,7 +98,41 @@ public class NaiveMessageStore implements MessageStore {
 		}
 		return null;
 	}
+	@Override
+	public MetaMessage[] tagSearchFull(String[] tags) {
+		Message[] messages = tagSearch(tags);
+		MetaMessage[] fullMessages = new MetaMessage[messages.length];
+		for(int i=0; i<messages.length;i++) {
+			fullMessages[i] = readMessageMetadata(messages[i]);
+		}
+		return fullMessages;
+	}
 
+	private MetaMessage readMessageMetadata(Message message) {
+		MetaMessage meta = new MetaMessage();
+		meta.setMessage(message);
+		meta.setPostedBy(userStore.getUser(message.getPostedBy()));
+		meta.setTags(getTags(message));
+		return meta;
+	}
+	
+	private String[] getTags(Message message) {
+		String getTags = "select * from message_tags, tags where message_tags.tag_id = tags.id and message_id = ?";
+		try {
+			PreparedStatement stmt = connection.prepareStatement(getTags);
+			stmt.setLong(1, message.getId());
+			List<String> tags = new LinkedList<>();
+			ResultSet rs = stmt.executeQuery();
+			while(rs.next()) {
+				tags.add(rs.getString("tag"));
+			}
+			return tags.toArray(new String[tags.size()]);
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return new String[] {};		
+	}
 
 	@Override
 	public Message readMessage(long id) {

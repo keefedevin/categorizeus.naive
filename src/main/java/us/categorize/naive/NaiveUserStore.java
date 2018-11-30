@@ -153,4 +153,9 @@ public class NaiveUserStore implements UserStore {
 		return false;
 	}
 
+	@Override
+	public User getUser(long id) {
+		return find(id);
+	}
+
 }
