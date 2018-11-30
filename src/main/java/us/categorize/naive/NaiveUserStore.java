@@ -1,5 +1,8 @@
 package us.categorize.naive;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -80,20 +83,50 @@ public class NaiveUserStore implements UserStore {
 		return false;
 	}
 	
+	public static String sha256hash(String password) {
+		MessageDigest digest;
+		try {
+			digest = MessageDigest.getInstance("SHA-256");
+			byte[] encodedhash = digest.digest(
+					password.getBytes(StandardCharsets.UTF_8));
+			return bytesToHex(encodedhash);
+		} catch (NoSuchAlgorithmException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
+	private static String bytesToHex(byte[] hash) {
+	    StringBuffer hexString = new StringBuffer();
+	    for (int i = 0; i < hash.length; i++) {
+	    String hex = Integer.toHexString(0xff & hash[i]);
+	    if(hex.length() == 1) hexString.append('0');
+	        hexString.append(hex);
+	    }
+	    return hexString.toString();
+	}
+	
 	
 	//TODO the login validation part probably doesn't belong here, think about this after doing the OAuth integration
 	@Override
 	public boolean establishUserSession(User user, String sessionKey) {
 		String createUserSession = "insert into user_sessions(session_uuid, user_id) values (?,?)";
 		String findUser = "select * from users where username=? and passhash=?";
+		String sessionExists = "select * from user_sessions where session_uuid = ?";
 		try{
 			PreparedStatement stmt = connection.prepareStatement(findUser);
 			stmt.setString(1, user.getUsername());
-			stmt.setString(2, user.getPasshash());
+			stmt.setString(2, sha256hash(user.getPasshash()));
 			ResultSet rs = stmt.executeQuery();
 			if(!(rs!=null && rs.next())){
 				return false;		
 			}
+			user.setId(rs.getLong("id"));
+			stmt = connection.prepareStatement(sessionExists);
+			stmt.setString(1, sessionKey);
+			rs = stmt.executeQuery();
+			if(rs!=null && rs.next()) return true;
 			stmt = connection.prepareStatement(createUserSession);
 			stmt.setString(1,sessionKey);
 			stmt.setLong(2, user.getId());
