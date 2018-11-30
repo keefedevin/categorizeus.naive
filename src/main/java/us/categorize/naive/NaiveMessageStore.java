@@ -69,6 +69,9 @@ public class NaiveMessageStore implements MessageStore {
 		}
 	
 		String tagSearch = "select messages.* from messages, message_tags where messages.id = message_tags.message_id and tag_id in ("+questions+") group by messages.id";
+		if(tags.length==0) {
+			tagSearch = "select messages.* from messages, message_tags where messages.id = message_tags.message_id";
+		}
 		try {
 			PreparedStatement stmt = connection.prepareStatement(tagSearch);
 			//Array arr = stmt.getConnection().createArrayOf("bigint", tagIds);
