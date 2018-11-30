@@ -72,9 +72,9 @@ public class NaiveMessageStore implements MessageStore {
 			questions = questions+"?";
 		}
 	
-		String tagSearch = "select messages.* from messages, message_tags where messages.id = message_tags.message_id and tag_id in ("+questions+") group by messages.id";
+		String tagSearch = "select messages.* from messages, message_tags where messages.replies_to is null and messages.id = message_tags.message_id and tag_id in ("+questions+") group by messages.id";
 		if(tags.length==0) {
-			tagSearch = "select messages.* from messages, message_tags where messages.id = message_tags.message_id";
+			tagSearch = "select messages.* from messages where messages.replies_to is null";
 		}
 		try {
 			PreparedStatement stmt = connection.prepareStatement(tagSearch);
