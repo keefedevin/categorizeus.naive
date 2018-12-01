@@ -4,6 +4,7 @@ drop table if exists messages;
 drop table if exists users;
 drop table if exists message_tags;
 drop table if exists user_sessions;
+drop table if exists message_attachments;
 
 
 create table if not exists tags(
@@ -18,6 +19,13 @@ create table if not exists messages(
 	posted_by bigint,
 	replies_to bigint,
 	root_replies_to bigint
+);
+
+create table if not exists message_attachments(
+	id bigserial primary key,
+	message_id bigint,
+	filename text,
+	length bigint
 );
 
 create table if not exists users(

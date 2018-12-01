@@ -1,5 +1,10 @@
 package us.categorize.naive;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -11,6 +16,7 @@ import java.util.List;
 
 import us.categorize.api.MessageStore;
 import us.categorize.api.UserStore;
+import us.categorize.model.Attachment;
 import us.categorize.model.Message;
 import us.categorize.model.MetaMessage;
 import us.categorize.model.Tag;
@@ -19,10 +25,12 @@ public class NaiveMessageStore implements MessageStore {
 
 	private Connection connection;
 	private UserStore userStore;
+	private String fileBase;
 		
-	public NaiveMessageStore(Connection connection, UserStore userStore) {
+	public NaiveMessageStore(Connection connection, UserStore userStore, String fileBase) {
 		this.connection = connection;
 		this.userStore = userStore;
+		this.fileBase = fileBase;
 	}
 	
 	@Override
@@ -113,6 +121,7 @@ public class NaiveMessageStore implements MessageStore {
 		meta.setMessage(message);
 		meta.setPostedBy(userStore.getUser(message.getPostedBy()));
 		meta.setTags(getTags(message));
+		meta.setAttachment(readAttachment(message));
 		return meta;
 	}
 	
@@ -333,5 +342,36 @@ public class NaiveMessageStore implements MessageStore {
 			tag[i] = tagFor(tags[i]);
 		}
 		return tag;
+	}
+
+	@Override
+	public Attachment createAttachment(Attachment attachment, InputStream inputStream) {
+		String uploadLocation = fileBase+attachment.getFilename();
+		writeToFile(inputStream, uploadLocation);
+		return attachment;
+	}
+	private void writeToFile(InputStream uploadedInputStream,
+			String uploadedFileLocation) {
+
+			try {
+				OutputStream out = new FileOutputStream(new File(
+						uploadedFileLocation));
+				int read = 0;
+				byte[] bytes = new byte[1024];
+				while ((read = uploadedInputStream.read(bytes)) != -1) {
+					out.write(bytes, 0, read);
+				}
+				out.flush();
+				out.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+
+		}
+
+	@Override
+	public Attachment readAttachment(Message message) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

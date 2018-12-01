@@ -49,6 +49,7 @@ public class Config {
 		dbPort = properties.getProperty("DB_PORT");
 		dbUser = properties.getProperty("DB_USER");
 		dbPass = properties.getProperty("DB_PASS");
+		fileBase = properties.getProperty("FILE_BASE");
 		s3bucket = properties.getProperty("S3_ASSETS_BUCKET");
 		s3region = properties.getProperty("AWS_REGION");
 		repositoryType = properties.getProperty("REPOSITORY_TYPE");
@@ -66,7 +67,6 @@ public class Config {
 		maxThumbHeight = Double.parseDouble(properties.getProperty("MAX_THUMB_HEIGHT"));
 		port = Integer.parseInt(properties.getProperty("PORT"));
 		staticDir = properties.getProperty("STATIC_DIR");
-		fileBase = staticDir + "/files";
 	}
 	
 	public Connection getDatabaseConnection() throws Exception{
