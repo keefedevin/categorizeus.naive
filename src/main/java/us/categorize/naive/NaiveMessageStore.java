@@ -346,8 +346,32 @@ public class NaiveMessageStore implements MessageStore {
 
 	@Override
 	public Attachment createAttachment(Attachment attachment, InputStream inputStream) {
-		String uploadLocation = fileBase+attachment.getFilename();
+		String fn = attachment.getFilename();
+		fn = fn.substring(fn.lastIndexOf("."));
+		attachment.setExtension(fn);
+		attachment = writeAttachment(attachment);
+		String uploadLocation = fileBase+attachment.getId()+fn;
 		writeToFile(inputStream, uploadLocation);
+		return attachment;
+	}
+	private Attachment writeAttachment(Attachment attachment) {
+		String sqlWriteAttachment = "insert into message_attachments(message_id, filename, length, extension) values (?,?,?,?)";
+		try {
+			PreparedStatement stmt = connection.prepareStatement(sqlWriteAttachment,Statement.RETURN_GENERATED_KEYS);
+			stmt.setLong(1, attachment.getMessageId());
+			stmt.setString(2, attachment.getFilename());
+			stmt.setLong(3, attachment.getLength());
+			stmt.setString(4, attachment.getExtension());
+			stmt.executeUpdate();
+			ResultSet rs = stmt.getGeneratedKeys();
+			rs.next();
+			long key = rs.getLong(1);
+			attachment.setId(key);
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 		return attachment;
 	}
 	private void writeToFile(InputStream uploadedInputStream,
@@ -371,7 +395,24 @@ public class NaiveMessageStore implements MessageStore {
 
 	@Override
 	public Attachment readAttachment(Message message) {
-		// TODO Auto-generated method stub
+		String sqlGetAttachment = "select * from message_attachments where message_id = ?";
+		try {
+			PreparedStatement stmt = connection.prepareStatement(sqlGetAttachment);
+			stmt.setLong(1, message.getId());
+			ResultSet rs = stmt.executeQuery();
+			if(rs!=null && rs.next()) {
+				Attachment attachment = new Attachment();
+				attachment.setMessageId(message.getId());
+				attachment.setFilename(rs.getString("filename"));
+				attachment.setLength(rs.getLong("length"));
+				attachment.setId(rs.getLong("id"));
+				attachment.setExtension(rs.getString("extension"));
+				return attachment;
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return null;
 	}
 }

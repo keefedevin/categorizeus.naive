@@ -1,4 +1,5 @@
 drop index if exists messagetag;
+drop index if exists message_attachments_message;
 drop table if exists tags;
 drop table if exists messages;
 drop table if exists users;
@@ -25,6 +26,7 @@ create table if not exists message_attachments(
 	id bigserial primary key,
 	message_id bigint,
 	filename text,
+	extension text,
 	length bigint
 );
 
@@ -48,6 +50,7 @@ create table if not exists user_sessions(
 create unique index messagetag on message_tags(message_id, tag_id);
 create index user_messages on messages(posted_by);
 create index message_replies on messages(replies_to);
+create index message_attachments_message on message_attachments(message_id);
 create index message_root_replies on messages(root_replies_to);
 create unique index taglookup on tags(tag);
 
