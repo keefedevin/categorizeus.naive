@@ -14,6 +14,7 @@ import java.sql.Types;
 import java.util.LinkedList;
 import java.util.List;
 
+import us.categorize.Config;
 import us.categorize.api.MessageStore;
 import us.categorize.api.UserStore;
 import us.categorize.model.Attachment;
@@ -70,7 +71,10 @@ public class NaiveMessageStore implements MessageStore {
     }
 
 	@Override
-	public Message[] tagSearch(String[] tagStrings) {
+	public Message[] tagSearch(String[] tagStrings, Integer pageOn, Integer pageSize) {
+		if(pageOn==null) pageOn = Config.DEFAULT_PAGE_ON;
+		if(pageSize==null) pageSize = Config.DEFAULT_PAGE_SIZE;
+		
 		Tag[] tags = tagsToObjects(tagStrings);
 		Long tagIds[] = new Long[tags.length];
 		String questions = "";
@@ -84,14 +88,19 @@ public class NaiveMessageStore implements MessageStore {
 		if(tags.length==0) {
 			tagSearch = "select messages.* from messages where messages.replies_to is null";
 		}
+		tagSearch += " limit ? offset ?";
+		
 		try {
 			PreparedStatement stmt = connection.prepareStatement(tagSearch);
 			//Array arr = stmt.getConnection().createArrayOf("bigint", tagIds);
 			//  Hint: No operator matches the given name and argument types. You might need to add explicit type casts.
 			//org.postgresql.util.PSQLException: ERROR: operator does not exist: bigint = bigint[]
-			for(int i=0; i<tags.length;i++) {
+			int i = 0;
+			for(i=0; i<tags.length;i++) {
 				stmt.setLong(i+1, tags[i].getId());
 			}
+			stmt.setInt(i+1, pageSize);//+1 for 1 based index on paramters in prepared statements
+			stmt.setInt(i+2, pageOn * pageSize);
 			ResultSet rs = stmt.executeQuery();
 			List<Message> messages = new LinkedList<>();
 			while(rs.next()) {
@@ -107,8 +116,8 @@ public class NaiveMessageStore implements MessageStore {
 		return null;
 	}
 	@Override
-	public MetaMessage[] tagSearchFull(String[] tags) {
-		Message[] messages = tagSearch(tags);
+	public MetaMessage[] tagSearchFull(String[] tags, Integer pageOn, Integer pageSize) {
+		Message[] messages = tagSearch(tags, pageOn, pageSize);
 		MetaMessage[] fullMessages = new MetaMessage[messages.length];
 		for(int i=0; i<messages.length;i++) {
 			fullMessages[i] = readMessageMetadata(messages[i]);

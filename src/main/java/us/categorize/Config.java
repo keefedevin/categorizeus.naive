@@ -9,6 +9,7 @@ import java.util.Properties;
 
 
 public class Config {
+	public static final int DEFAULT_PAGE_SIZE=10, DEFAULT_PAGE_ON=0;
 	private String clearSql, createSql, dbHost, dbPort, dbName, dbUser, dbPass, staticDir, indexSql, seedSql, fileBase;
 	private double maxThumbWidth, maxThumbHeight;
 	
