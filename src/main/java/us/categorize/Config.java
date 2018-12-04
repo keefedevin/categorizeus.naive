@@ -30,7 +30,7 @@ public class Config {
 
 	public static Config readRelativeConfig() throws Exception{
 		Properties properties = new Properties();
-		InputStream input = NaiveBootstrap.class.getResourceAsStream("/categorizeus.properties");
+		InputStream input = Config.class.getResourceAsStream("/categorizeus.properties");
 		properties.load(input);
 		StringWriter writer = new StringWriter();
 		properties.list(new PrintWriter(writer));
