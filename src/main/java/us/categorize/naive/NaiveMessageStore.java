@@ -21,6 +21,7 @@ import us.categorize.model.Attachment;
 import us.categorize.model.Message;
 import us.categorize.model.MetaMessage;
 import us.categorize.model.Tag;
+import us.categorize.model.User;
 
 public class NaiveMessageStore implements MessageStore {
 
@@ -235,7 +236,7 @@ public class NaiveMessageStore implements MessageStore {
 	}
 
 	@Override
-	public boolean tagMessage(long id, String[] tagStrings) {
+	public boolean tagMessage(long id, String[] tagStrings, User user) {
 		String clearOldTags = "delete from message_tags where message_id=?";
 		PreparedStatement stmt;
 		try {
@@ -254,7 +255,7 @@ public class NaiveMessageStore implements MessageStore {
 	}
 
 	@Override
-	public boolean addMessageTag(long id, String tag) {
+	public boolean addMessageTag(long id, String tag, User user) {
 		return tagMessage(id, tagFor(tag));
 	}
 	private boolean tagMessage(long id, Tag tag) {
@@ -273,7 +274,7 @@ public class NaiveMessageStore implements MessageStore {
 		return false;
 	}
 	@Override
-	public boolean removeMessageTag(long id, String tag) {
+	public boolean removeMessageTag(long id, String tag, User user) {
 		String deleteTag = "delete from message_tags where message_id=? and tag_id=?";
 		Tag tagO = tagFor(tag);
 		try {
