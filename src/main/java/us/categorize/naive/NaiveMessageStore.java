@@ -85,7 +85,7 @@ public class NaiveMessageStore implements MessageStore {
 			questions = questions+"?";
 		}
 	
-		String tagSearch = "select messages.* from messages, message_tags where messages.replies_to is null and messages.id = message_tags.message_id and tag_id in ("+questions+") group by messages.id";
+		String tagSearch = "select messages.* from messages, message_tags where messages.replies_to is null and messages.id = message_tags.message_id and tag_id in ("+questions+") group by messages.id having count(*) = ?";
 		if(tags.length==0) {
 			tagSearch = "select messages.* from messages where messages.replies_to is null";
 		}
@@ -99,6 +99,10 @@ public class NaiveMessageStore implements MessageStore {
 			int i = 0;
 			for(i=0; i<tags.length;i++) {
 				stmt.setLong(i+1, tags[i].getId());
+			}
+			if(i>0) {
+				stmt.setInt(i+1, tags.length);
+				i++;
 			}
 			stmt.setInt(i+1, pageSize);//+1 for 1 based index on paramters in prepared statements
 			stmt.setInt(i+2, pageOn * pageSize);
