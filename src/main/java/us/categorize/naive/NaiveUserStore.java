@@ -28,7 +28,7 @@ public class NaiveUserStore implements UserStore {
 			stmt.setString(1,  sessionKey);
 			ResultSet rs = stmt.executeQuery();
 			if(rs!=null && rs.next()){
-				return find(rs.getLong("user_id"));
+				return find(""+rs.getLong("user_id"));
 			}
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -38,16 +38,16 @@ public class NaiveUserStore implements UserStore {
 		return null;
 	}
 	
-	private User find(long id)  {
+	private User find(String id)  {
 		String findUser = "select * from users where id=?";
 		PreparedStatement stmt;
 		try {
 			stmt = connection.prepareStatement(findUser);
-			stmt.setLong(1, id);
+			stmt.setLong(1, Long.parseLong(id));
 			ResultSet rs = stmt.executeQuery();
 			if(rs!=null && rs.next()){
 				User user = new User();
-				user.setId(rs.getLong("id"));
+				user.setId(rs.getLong("id")+"");
 				user.setEmail(rs.getString("email"));
 				user.setPasshash(rs.getString("passhash"));
 				user.setUsername(rs.getString("username"));
@@ -73,7 +73,7 @@ public class NaiveUserStore implements UserStore {
 			stmt.executeUpdate();
 			ResultSet rs = stmt.getGeneratedKeys();
 			rs.next();
-			long newId = rs.getLong(1);
+			String newId = ""+rs.getLong(1);
 			user.setId(newId);
 			return true;
 		} catch (SQLException e) {
@@ -108,7 +108,7 @@ public class NaiveUserStore implements UserStore {
 	}
 	
 	
-	//TODO the login validation part probably doesn't belong here, think about this after doing the OAuth integration
+	//TODO the login validation part probably doesn't beString here, think about this after doing the OAuth integration
 	@Override
 	public boolean establishUserSession(User user, String sessionKey) {
 		String createUserSession = "insert into user_sessions(session_uuid, user_id) values (?,?)";
@@ -122,14 +122,14 @@ public class NaiveUserStore implements UserStore {
 			if(!(rs!=null && rs.next())){
 				return false;		
 			}
-			user.setId(rs.getLong("id"));
+			user.setId(rs.getLong("id")+"");
 			stmt = connection.prepareStatement(sessionExists);
 			stmt.setString(1, sessionKey);
 			rs = stmt.executeQuery();
 			if(rs!=null && rs.next()) return true;
 			stmt = connection.prepareStatement(createUserSession);
 			stmt.setString(1,sessionKey);
-			stmt.setLong(2, user.getId());
+			stmt.setLong(2, Long.parseLong(user.getId()));
 			stmt.executeUpdate();
 			return true;
 		}catch(Exception e){
@@ -154,7 +154,7 @@ public class NaiveUserStore implements UserStore {
 	}
 
 	@Override
-	public User getUser(long id) {
+	public User getUser(String id) {
 		return find(id);
 	}
 
