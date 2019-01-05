@@ -51,6 +51,10 @@ public class NaiveUserStore implements UserStore {
 				user.setEmail(rs.getString("email"));
 				user.setPasshash(rs.getString("passhash"));
 				user.setUsername(rs.getString("username"));
+				user.setName(rs.getString("name"));
+				user.setGivenName(rs.getString("given_name"));
+				user.setFamilyName(rs.getString("family_name"));
+				user.setAuthorized(rs.getBoolean("authorized"));
 				return user;
 			}
 		} catch (SQLException e) {
@@ -63,13 +67,17 @@ public class NaiveUserStore implements UserStore {
 
 	@Override
 	public boolean registerUser(User user) {
-		String insertUser = "insert into users(username, passhash, email) values (?,?,?)";
+		String insertUser = "insert into users(username, passhash, email, name, given_name, family_name, authorized) values (?,?,?,?,?,?,?)";
 		PreparedStatement stmt;
 		try {
 			stmt = connection.prepareStatement(insertUser, Statement.RETURN_GENERATED_KEYS);
 			stmt.setString(1, user.getUsername());
 			stmt.setString(2, user.getPasshash());
 			stmt.setString(3, user.getEmail());
+			stmt.setString(4, user.getName());
+			stmt.setString(5, user.getGivenName());
+			stmt.setString(6, user.getFamilyName());
+			stmt.setBoolean(7, user.isAuthorized());
 			stmt.executeUpdate();
 			ResultSet rs = stmt.getGeneratedKeys();
 			rs.next();

@@ -89,7 +89,7 @@ public class NaiveMessageStore implements MessageStore {
 		if(tags.length==0) {
 			tagSearch = "select messages.* from messages where messages.replies_to is null";
 		}
-		tagSearch += " limit ? offset ?";
+		tagSearch += " order by messages.id desc limit ? offset ?";
 		
 		try {
 			PreparedStatement stmt = connection.prepareStatement(tagSearch);
@@ -253,21 +253,22 @@ public class NaiveMessageStore implements MessageStore {
 		}
 		Tag[] tags = tagsToObjects(tagStrings);
 		for(Tag t : tags) {
-			tagMessage(id, t);
+			tagMessage(id, t, user);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean addMessageTag(String id, String tag, User user) {
-		return tagMessage(id, tagFor(tag));
+		return tagMessage(id, tagFor(tag), user);
 	}
-	private boolean tagMessage(String id, Tag tag) {
-		String tagStatement = "insert into message_tags(message_id, tag_id) values (?,?)";
+	private boolean tagMessage(String id, Tag tag, User user) {
+		String tagStatement = "insert into message_tags(message_id, tag_id, user_id) values (?,?,?)";
 		try {
 			PreparedStatement stmt = connection.prepareStatement(tagStatement);
 			stmt.setLong(1, Long.parseLong(id));
 			stmt.setLong(2, Long.parseLong(tag.getId()));
+			stmt.setLong(3, Long.parseLong(user.getId()));
 			stmt.executeUpdate();
 			return true;
 		} catch (SQLException e) {
@@ -359,7 +360,11 @@ public class NaiveMessageStore implements MessageStore {
 			PreparedStatement stmt = connection.prepareStatement(sqlWriteAttachment,Statement.RETURN_GENERATED_KEYS);
 			stmt.setLong(1, Long.parseLong(attachment.getMessageId()));
 			stmt.setString(2, attachment.getFilename());
-			stmt.setLong(3, attachment.getLength());
+			if(attachment.getLength()!=null) {
+				stmt.setLong(3, attachment.getLength());				
+			}else {
+				stmt.setNull(3, Types.BIGINT);
+			}
 			stmt.setString(4, attachment.getExtension());
 			stmt.executeUpdate();
 			ResultSet rs = stmt.getGeneratedKeys();
