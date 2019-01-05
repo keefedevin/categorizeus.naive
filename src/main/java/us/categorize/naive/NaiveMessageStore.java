@@ -44,7 +44,7 @@ public class NaiveMessageStore implements MessageStore {
 			stmt.executeUpdate();
 			ResultSet rs = stmt.getGeneratedKeys();
 			rs.next();
-			long key = rs.getLong(1);
+			String key = ""+rs.getLong(1);
 			message.setId(key);
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
@@ -58,16 +58,16 @@ public class NaiveMessageStore implements MessageStore {
     {
     	stmt.setString(1, message.getBody());
 		stmt.setString(2, message.getTitle());
-		stmt.setLong(3, message.getPostedBy());
-		if(message.getRepliesTo()==0) {
+		stmt.setLong(3, Long.parseLong(message.getPostedBy()));
+		if(message.getRepliesTo()==null) {
 			stmt.setNull(4, Types.BIGINT);
 		}else {
-			stmt.setLong(4, message.getRepliesTo());			
+			stmt.setLong(4, Long.parseLong(message.getRepliesTo()));			
 		}
-		if(message.getRootRepliesTo()==0) {
+		if(message.getRootRepliesTo()==null) {
 			stmt.setNull(5, Types.BIGINT);
 		}else {
-			stmt.setLong(5, message.getRootRepliesTo());			
+			stmt.setLong(5, Long.parseLong(message.getRootRepliesTo()));			
 		}
     }
 
@@ -80,7 +80,7 @@ public class NaiveMessageStore implements MessageStore {
 		Long tagIds[] = new Long[tags.length];
 		String questions = "";
 		for(int i=0; i<tags.length;i++) {
-			tagIds[i] = tags[i].getId();
+			tagIds[i] = Long.parseLong(tags[i].getId());
 			if(i!=0) questions = questions+",";//TODO obviously gnarly but don't optimize yet
 			questions = questions+"?";
 		}
@@ -89,7 +89,7 @@ public class NaiveMessageStore implements MessageStore {
 		if(tags.length==0) {
 			tagSearch = "select messages.* from messages where messages.replies_to is null";
 		}
-		tagSearch += " limit ? offset ?";
+		tagSearch += " order by messages.id desc limit ? offset ?";
 		
 		try {
 			PreparedStatement stmt = connection.prepareStatement(tagSearch);
@@ -98,7 +98,7 @@ public class NaiveMessageStore implements MessageStore {
 			//org.postgresql.util.PSQLException: ERROR: operator does not exist: bigint = bigint[]
 			int i = 0;
 			for(i=0; i<tags.length;i++) {
-				stmt.setLong(i+1, tags[i].getId());
+				stmt.setLong(i+1, Long.parseLong(tags[i].getId()));
 			}
 			if(i>0) {
 				stmt.setInt(i+1, tags.length);
@@ -143,7 +143,7 @@ public class NaiveMessageStore implements MessageStore {
 		String getTags = "select * from message_tags, tags where message_tags.tag_id = tags.id and message_id = ?";
 		try {
 			PreparedStatement stmt = connection.prepareStatement(getTags);
-			stmt.setLong(1, message.getId());
+			stmt.setLong(1, Long.parseLong(message.getId()));
 			List<String> tags = new LinkedList<>();
 			ResultSet rs = stmt.executeQuery();
 			while(rs.next()) {
@@ -158,11 +158,11 @@ public class NaiveMessageStore implements MessageStore {
 	}
 
 	@Override
-	public Message readMessage(long id) {
+	public Message readMessage(String id) {
         try{
             String findMessage = "select * from messages where id=?";
     		PreparedStatement stmt = connection.prepareStatement(findMessage);
-    		stmt.setLong(1, id);
+    		stmt.setLong(1, Long.parseLong(id));
     		ResultSet rs = stmt.executeQuery();
     		if(rs.next()){
     		    return mapMessageRow(new Message(), rs);
@@ -191,21 +191,21 @@ public class NaiveMessageStore implements MessageStore {
 	}
 	
     private Message mapMessageRow(Message message, ResultSet rs) throws SQLException {
-    	message.setId(rs.getLong("id"));
+    	message.setId(rs.getLong("id")+"");
 		message.setBody(rs.getString("body"));
 		message.setTitle(rs.getString("title"));
-		message.setPostedBy(rs.getLong("posted_by"));
-		message.setRepliesTo(rs.getLong("replies_to"));
-		message.setRootRepliesTo(rs.getLong("root_replies_to"));
+		message.setPostedBy(rs.getLong("posted_by")+"");
+		message.setRepliesTo(rs.getLong("replies_to")+"");
+		message.setRootRepliesTo(rs.getLong("root_replies_to")+"");
 		return message;
 	}
 
 	@Override
-	public MetaMessage[] readMessageThread(long id) {
+	public MetaMessage[] readMessageThread(String id) {
         try{
             String findMessage = "select * from messages where root_replies_to=?";
     		PreparedStatement stmt = connection.prepareStatement(findMessage);
-    		stmt.setLong(1, id);
+    		stmt.setLong(1,Long.parseLong(id));
     		ResultSet rs = stmt.executeQuery();
     		List<MetaMessage> thread = new LinkedList<MetaMessage>();
     		while(rs.next()){
@@ -220,15 +220,15 @@ public class NaiveMessageStore implements MessageStore {
 	}
 
 	@Override
-	public boolean deleteMessage(long id) {
+	public boolean deleteMessage(String id) {
 		String deleteMessage = "delete from messages where message_id = ?";
 		String deleteTags = "delete from message_tags where message_id=?";
 		try {
 			PreparedStatement stmt = connection.prepareStatement(deleteMessage);
-			stmt.setLong(1, id);
+			stmt.setLong(1, Long.parseLong(id));
 			stmt.executeUpdate();
 			stmt = connection.prepareStatement(deleteTags);
-			stmt.setLong(1, id);
+			stmt.setLong(1, Long.parseLong(id));
 			stmt.executeUpdate();
 			return true;
 		} catch (SQLException e) {
@@ -240,12 +240,12 @@ public class NaiveMessageStore implements MessageStore {
 	}
 
 	@Override
-	public boolean tagMessage(long id, String[] tagStrings, User user) {
+	public boolean tagMessage(String id, String[] tagStrings, User user) {
 		String clearOldTags = "delete from message_tags where message_id=?";
 		PreparedStatement stmt;
 		try {
 			stmt = connection.prepareStatement(clearOldTags);
-			stmt.setLong(1, id);
+			stmt.setLong(1, Long.parseLong(id));
 			stmt.executeUpdate();
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
@@ -253,21 +253,22 @@ public class NaiveMessageStore implements MessageStore {
 		}
 		Tag[] tags = tagsToObjects(tagStrings);
 		for(Tag t : tags) {
-			tagMessage(id, t);
+			tagMessage(id, t, user);
 		}
 		return true;
 	}
 
 	@Override
-	public boolean addMessageTag(long id, String tag, User user) {
-		return tagMessage(id, tagFor(tag));
+	public boolean addMessageTag(String id, String tag, User user) {
+		return tagMessage(id, tagFor(tag), user);
 	}
-	private boolean tagMessage(long id, Tag tag) {
-		String tagStatement = "insert into message_tags(message_id, tag_id) values (?,?)";
+	private boolean tagMessage(String id, Tag tag, User user) {
+		String tagStatement = "insert into message_tags(message_id, tag_id, user_id) values (?,?,?)";
 		try {
 			PreparedStatement stmt = connection.prepareStatement(tagStatement);
-			stmt.setLong(1, id);
-			stmt.setLong(2, tag.getId());
+			stmt.setLong(1, Long.parseLong(id));
+			stmt.setLong(2, Long.parseLong(tag.getId()));
+			stmt.setLong(3, Long.parseLong(user.getId()));
 			stmt.executeUpdate();
 			return true;
 		} catch (SQLException e) {
@@ -278,13 +279,13 @@ public class NaiveMessageStore implements MessageStore {
 		return false;
 	}
 	@Override
-	public boolean removeMessageTag(long id, String tag, User user) {
+	public boolean removeMessageTag(String id, String tag, User user) {
 		String deleteTag = "delete from message_tags where message_id=? and tag_id=?";
 		Tag tagO = tagFor(tag);
 		try {
 			PreparedStatement stmt = connection.prepareStatement(deleteTag);
-			stmt.setLong(1, id);
-			stmt.setLong(2, tagO.getId());
+			stmt.setLong(1, Long.parseLong(id));
+			stmt.setLong(2, Long.parseLong(tagO.getId()));
 			stmt.executeUpdate();
 			return true;
 		} catch (SQLException e) {
@@ -309,7 +310,7 @@ public class NaiveMessageStore implements MessageStore {
     		stmt.setString(1, tag.getTag());
     		ResultSet rs = stmt.executeQuery();
     		if(rs.next()){
-    			tag.setId(rs.getLong("id"));
+    			tag.setId(rs.getLong("id")+"");
     			return true;
     		}
         }catch(SQLException sqe){
@@ -325,7 +326,7 @@ public class NaiveMessageStore implements MessageStore {
     			insertStatement.executeUpdate();//this is synchronous, right?
     			ResultSet rs = insertStatement.getGeneratedKeys();
     			rs.next();
-    			long key = rs.getLong(1);
+    			String key = ""+rs.getLong(1);
     			tag.setId(key);
     		    return true;
             }catch(SQLException sqe){
@@ -357,14 +358,18 @@ public class NaiveMessageStore implements MessageStore {
 		String sqlWriteAttachment = "insert into message_attachments(message_id, filename, length, extension) values (?,?,?,?)";
 		try {
 			PreparedStatement stmt = connection.prepareStatement(sqlWriteAttachment,Statement.RETURN_GENERATED_KEYS);
-			stmt.setLong(1, attachment.getMessageId());
+			stmt.setLong(1, Long.parseLong(attachment.getMessageId()));
 			stmt.setString(2, attachment.getFilename());
-			stmt.setLong(3, attachment.getLength());
+			if(attachment.getLength()!=null) {
+				stmt.setLong(3, attachment.getLength());				
+			}else {
+				stmt.setNull(3, Types.BIGINT);
+			}
 			stmt.setString(4, attachment.getExtension());
 			stmt.executeUpdate();
 			ResultSet rs = stmt.getGeneratedKeys();
 			rs.next();
-			long key = rs.getLong(1);
+			String key = ""+rs.getLong(1);
 			attachment.setId(key);
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
@@ -397,14 +402,14 @@ public class NaiveMessageStore implements MessageStore {
 		String sqlGetAttachment = "select * from message_attachments where message_id = ?";
 		try {
 			PreparedStatement stmt = connection.prepareStatement(sqlGetAttachment);
-			stmt.setLong(1, message.getId());
+			stmt.setLong(1, Long.parseLong(message.getId()));
 			ResultSet rs = stmt.executeQuery();
 			if(rs!=null && rs.next()) {
 				Attachment attachment = new Attachment();
 				attachment.setMessageId(message.getId());
 				attachment.setFilename(rs.getString("filename"));
 				attachment.setLength(rs.getLong("length"));
-				attachment.setId(rs.getLong("id"));
+				attachment.setId(""+rs.getLong("id"));
 				attachment.setExtension(rs.getString("extension"));
 				return attachment;
 			}

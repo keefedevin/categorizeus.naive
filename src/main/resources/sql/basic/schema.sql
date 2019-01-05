@@ -34,12 +34,17 @@ create table if not exists users(
 	id bigserial primary key,
 	username text,
 	email text,
+	name text,
+	given_name text,
+	family_name text,
+	authorized boolean default false,
 	passhash text
 );
 
 create table if not exists message_tags(
 	message_id bigint,
-	tag_id bigint
+	tag_id bigint,
+	user_id bigint
 );
 
 create table if not exists user_sessions(

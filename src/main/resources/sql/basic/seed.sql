@@ -1,8 +1,8 @@
-insert into users(username, email, passhash) values ('keefe', 'keefe@categorize.us', '9ab3b090385ee96f8844969a7ee4e6a8c881cc4fb453562706db6a0506f559dd');
-insert into users(username, email, passhash) values ('keefe1', 'keefe+1@categorize.us', '9ab3b090385ee96f8844969a7ee4e6a8c881cc4fb453562706db6a0506f559dd');
-insert into users(username, email, passhash) values ('keefe2', 'keefe+2@categorize.us', '9ab3b090385ee96f8844969a7ee4e6a8c881cc4fb453562706db6a0506f559dd');
-insert into users(username, email, passhash) values ('keefe3', 'keefe+3@categorize.us', '9ab3b090385ee96f8844969a7ee4e6a8c881cc4fb453562706db6a0506f559dd');
-insert into users(username, email, passhash) values ('keefe4', 'keefe+4@categorize.us', '9ab3b090385ee96f8844969a7ee4e6a8c881cc4fb453562706db6a0506f559dd');
+insert into users(username, name, given_name, family_name, email, passhash, authorized) values ('keefe','keefe r', 'keefe', 'r', 'keefe@categorize.us', '52ff134d27822c6f83ea898eb2f8ab8ca6507080de32926041f3ed42827d4cfa', true);
+insert into users(username, name, given_name, family_name, email, passhash, authorized) values ('keefe1','keefe1 r', 'keefe1', 'r', 'keefe+1@categorize.us', '52ff134d27822c6f83ea898eb2f8ab8ca6507080de32926041f3ed42827d4cfa', true);
+insert into users(username, name, given_name, family_name, email, passhash, authorized) values ('keefe2','keefe2 r', 'keefe2', 'r', 'keefe+2@categorize.us', '52ff134d27822c6f83ea898eb2f8ab8ca6507080de32926041f3ed42827d4cfa', true);
+insert into users(username, name, given_name, family_name, email, passhash, authorized) values ('keefe3','keefe3 r', 'keefe3', 'r', 'keefe+3@categorize.us', '52ff134d27822c6f83ea898eb2f8ab8ca6507080de32926041f3ed42827d4cfa', true);
+insert into users(username, name, given_name, family_name, email, passhash, authorized) values ('keefe4','keefe4 r', 'keefe4', 'r', 'keefe+4@categorize.us', '52ff134d27822c6f83ea898eb2f8ab8ca6507080de32926041f3ed42827d4cfa', true);
 
 insert into tags(tag) values ('tag1');
 insert into tags(tag) values ('tag2');
@@ -27,14 +27,14 @@ insert into messages(body, title, posted_by, replies_to, root_replies_to) values
 insert into messages(body, title, posted_by, replies_to, root_replies_to) values ('Reply to (Reply to (Reply to Reply One 1) 2) 1', 'Reply* Title', 3, 11,1);/*12*/
 
 
-insert into message_tags(message_id, tag_id) values (1, 7);
-insert into message_tags(message_id, tag_id) values (2, 7);
-insert into message_tags(message_id, tag_id) values (3, 7);
-insert into message_tags(message_id, tag_id) values (4, 7);
-insert into message_tags(message_id, tag_id) values (5, 7);
-insert into message_tags(message_id, tag_id) values (1, 1);
-insert into message_tags(message_id, tag_id) values (6, 1);
-insert into message_tags(message_id, tag_id) values (1, 2);
-insert into message_tags(message_id, tag_id) values (1, 3);
-insert into message_tags(message_id, tag_id) values (2, 1);
-insert into message_tags(message_id, tag_id) values (2, 2);
+insert into message_tags(message_id, tag_id, user_id) values (1, 7, 1);
+insert into message_tags(message_id, tag_id, user_id) values (2, 7, 1);
+insert into message_tags(message_id, tag_id, user_id) values (3, 7, 1);
+insert into message_tags(message_id, tag_id, user_id) values (4, 7, 1);
+insert into message_tags(message_id, tag_id, user_id) values (5, 7, 1);
+insert into message_tags(message_id, tag_id, user_id) values (1, 1, 1);
+insert into message_tags(message_id, tag_id, user_id) values (6, 1, 1);
+insert into message_tags(message_id, tag_id, user_id) values (1, 2, 1);
+insert into message_tags(message_id, tag_id, user_id) values (1, 3, 1);
+insert into message_tags(message_id, tag_id, user_id) values (2, 1, 1);
+insert into message_tags(message_id, tag_id, user_id) values (2, 2, 1);
