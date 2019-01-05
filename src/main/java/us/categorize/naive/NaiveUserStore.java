@@ -45,24 +45,32 @@ public class NaiveUserStore implements UserStore {
 			stmt = connection.prepareStatement(findUser);
 			stmt.setLong(1, Long.parseLong(id));
 			ResultSet rs = stmt.executeQuery();
-			if(rs!=null && rs.next()){
-				User user = new User();
-				user.setId(rs.getLong("id")+"");
-				user.setEmail(rs.getString("email"));
-				user.setPasshash(rs.getString("passhash"));
-				user.setUsername(rs.getString("username"));
-				user.setName(rs.getString("name"));
-				user.setGivenName(rs.getString("given_name"));
-				user.setFamilyName(rs.getString("family_name"));
-				user.setAuthorized(rs.getBoolean("authorized"));
-				return user;
-			}
+			User user = null;
+			user = mapUserRow(rs);
+			return user;
+
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
 		return null;
+	}
+
+	private User mapUserRow(ResultSet rs) throws SQLException {
+		User user = null;
+		if(rs!=null && rs.next()){
+			user = new User();
+			user.setId(rs.getLong("id")+"");
+			user.setEmail(rs.getString("email"));
+			user.setPasshash(rs.getString("passhash"));
+			user.setUsername(rs.getString("username"));
+			user.setName(rs.getString("name"));
+			user.setGivenName(rs.getString("given_name"));
+			user.setFamilyName(rs.getString("family_name"));
+			user.setAuthorized(rs.getBoolean("authorized"));
+		}
+		return user;
 	}
 
 	@Override
@@ -116,24 +124,14 @@ public class NaiveUserStore implements UserStore {
 	}
 	
 	
-	//TODO the login validation part probably doesn't beString here, think about this after doing the OAuth integration
 	@Override
 	public boolean establishUserSession(User user, String sessionKey) {
 		String createUserSession = "insert into user_sessions(session_uuid, user_id) values (?,?)";
-		String findUser = "select * from users where username=? and passhash=?";
 		String sessionExists = "select * from user_sessions where session_uuid = ?";
 		try{
-			PreparedStatement stmt = connection.prepareStatement(findUser);
-			stmt.setString(1, user.getUsername());
-			stmt.setString(2, sha256hash(user.getPasshash()));
-			ResultSet rs = stmt.executeQuery();
-			if(!(rs!=null && rs.next())){
-				return false;		
-			}
-			user.setId(rs.getLong("id")+"");
-			stmt = connection.prepareStatement(sessionExists);
+			PreparedStatement stmt = connection.prepareStatement(sessionExists);
 			stmt.setString(1, sessionKey);
-			rs = stmt.executeQuery();
+			ResultSet rs = stmt.executeQuery();
 			if(rs!=null && rs.next()) return true;
 			stmt = connection.prepareStatement(createUserSession);
 			stmt.setString(1,sessionKey);
@@ -164,6 +162,47 @@ public class NaiveUserStore implements UserStore {
 	@Override
 	public User getUser(String id) {
 		return find(id);
+	}
+
+	@Override
+	public User getUserByUserName(String userName) {
+		String findUser = "select * from users where username=?";
+		PreparedStatement stmt;
+		try {
+			stmt = connection.prepareStatement(findUser);
+			stmt.setString(1, userName);
+			ResultSet rs = stmt.executeQuery();
+			User user = null;
+			user = mapUserRow(rs);
+			return user;
+
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		return null;
+	}
+
+	@Override
+	public boolean validateUser(User user) {
+		String findUser = "select * from users where username=? and passhash=?";
+		PreparedStatement stmt;
+		try {
+			stmt = connection.prepareStatement(findUser);
+			stmt.setString(1, user.getUsername());
+			stmt.setString(2, sha256hash(user.getPasshash()));
+			ResultSet rs = stmt.executeQuery();
+			if(!(rs!=null && rs.next())){
+				return false;		
+			}
+			user.setId(rs.getLong("id")+"");
+			return true;
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return false;
 	}
 
 }
