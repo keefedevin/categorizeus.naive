@@ -14,7 +14,6 @@ import java.sql.Types;
 import java.util.LinkedList;
 import java.util.List;
 
-import us.categorize.Config;
 import us.categorize.api.MessageStore;
 import us.categorize.api.UserStore;
 import us.categorize.model.Attachment;
@@ -28,10 +27,18 @@ public class NaiveMessageStore implements MessageStore {
 	private Connection connection;
 	private UserStore userStore;
 	private String fileBase;
+	private int defaultPageOn=0, defaultPageSize=10;
 		
-	public NaiveMessageStore(Connection connection, UserStore userStore, String fileBase) {
+	public NaiveMessageStore(Connection connection, 
+			UserStore userStore, 
+			String fileBase) {
 		this.connection = connection;
 		this.userStore = userStore;
+		if(fileBase!=null) {
+			if(fileBase.charAt(fileBase.length()-1)!=File.separatorChar) {
+				fileBase = fileBase + File.separatorChar;
+			}
+		}
 		this.fileBase = fileBase;
 	}
 	
@@ -73,8 +80,8 @@ public class NaiveMessageStore implements MessageStore {
 
 	@Override
 	public Message[] tagSearch(String[] tagStrings, Integer pageOn, Integer pageSize) {
-		if(pageOn==null) pageOn = Config.DEFAULT_PAGE_ON;
-		if(pageSize==null) pageSize = Config.DEFAULT_PAGE_SIZE;
+		if(pageOn==null) pageOn = defaultPageOn;
+		if(pageSize==null) pageSize = defaultPageSize;
 		
 		Tag[] tags = tagsToObjects(tagStrings);
 		Long tagIds[] = new Long[tags.length];
@@ -418,5 +425,21 @@ public class NaiveMessageStore implements MessageStore {
 			e.printStackTrace();
 		}
 		return null;
+	}
+
+	public int getDefaultPageOn() {
+		return defaultPageOn;
+	}
+
+	public void setDefaultPageOn(int defaultPageOn) {
+		this.defaultPageOn = defaultPageOn;
+	}
+
+	public int getDefaultPageSize() {
+		return defaultPageSize;
+	}
+
+	public void setDefaultPageSize(int defaultPageSize) {
+		this.defaultPageSize = defaultPageSize;
 	}
 }
