@@ -34,6 +34,11 @@ public class NaiveMessageStore implements MessageStore {
 			String fileBase) {
 		this.connection = connection;
 		this.userStore = userStore;
+		if(fileBase!=null) {
+			if(fileBase.charAt(fileBase.length()-1)!=File.separatorChar) {
+				fileBase = fileBase + File.separatorChar;
+			}
+		}
 		this.fileBase = fileBase;
 	}
 	
