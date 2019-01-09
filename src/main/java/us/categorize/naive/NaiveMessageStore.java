@@ -279,6 +279,9 @@ public class NaiveMessageStore implements MessageStore {
 			stmt.executeUpdate();
 			return true;
 		} catch (SQLException e) {
+			if(e.getMessage().contains("duplicate key")) {
+				return true;
+			}
 			// TODO Auto-generated catch block, this is particularly important because of unique constraint violations
 			e.printStackTrace();
 		}
