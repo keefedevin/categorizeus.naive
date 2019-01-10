@@ -368,7 +368,11 @@ public class NaiveMessageStore implements MessageStore {
 		String sqlWriteAttachment = "insert into message_attachments(message_id, filename, length, extension) values (?,?,?,?)";
 		try {
 			PreparedStatement stmt = connection.prepareStatement(sqlWriteAttachment,Statement.RETURN_GENERATED_KEYS);
-			stmt.setLong(1, Long.parseLong(attachment.getMessageId()));
+			if(attachment.getMessageId()==null) {
+				stmt.setNull(1, Types.BIGINT);				
+			}else {
+				stmt.setLong(1, Long.parseLong(attachment.getMessageId()));				
+			}
 			stmt.setString(2, attachment.getFilename());
 			if(attachment.getLength()!=null) {
 				stmt.setLong(3, attachment.getLength());				
@@ -381,6 +385,32 @@ public class NaiveMessageStore implements MessageStore {
 			rs.next();
 			String key = ""+rs.getLong(1);
 			attachment.setId(key);
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return attachment;
+	}
+	@Override
+	public Attachment updateAttachment(Attachment attachment) {
+		String sqlWriteAttachment = "update message_attachments set message_id=?, filename=?, length=?, extension=? where id=?";
+		try {
+			PreparedStatement stmt = connection.prepareStatement(sqlWriteAttachment,Statement.RETURN_GENERATED_KEYS);
+			if(attachment.getMessageId()==null) {
+				stmt.setNull(1, Types.BIGINT);				
+			}else {
+				stmt.setLong(1, Long.parseLong(attachment.getMessageId()));				
+			}
+			stmt.setString(2, attachment.getFilename());
+			if(attachment.getLength()!=null) {
+				stmt.setLong(3, attachment.getLength());				
+			}else {
+				stmt.setNull(3, Types.BIGINT);
+			}
+			stmt.setString(4, attachment.getExtension());
+			stmt.setLong(5, Long.parseLong(attachment.getId()));
+			stmt.executeUpdate();
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
