@@ -142,7 +142,7 @@ public class NaiveMessageStore implements MessageStore {
 		meta.setMessage(message);
 		meta.setPostedBy(userStore.getUser(message.getPostedBy()));
 		meta.setTags(getTags(message));
-		meta.setAttachment(readAttachment(message));
+		meta.setAttachments(readAttachments(message));
 		return meta;
 	}
 	
@@ -357,29 +357,38 @@ public class NaiveMessageStore implements MessageStore {
 	@Override
 	public Attachment createAttachment(Attachment attachment, InputStream inputStream) {
 		String fn = attachment.getFilename();
-		fn = fn.substring(fn.lastIndexOf("."));
-		attachment.setExtension(fn);
 		attachment = writeAttachment(attachment);
-		String uploadLocation = fileBase+attachment.getId()+fn;
+		String uploadLocation = fileBase+attachment.getId()+attachment.getExtension();
 		writeToFile(inputStream, uploadLocation);
 		return attachment;
 	}
+	@Override
+	public boolean associateAttachment(Message message, Attachment attachment) {
+		String associateAttachment = "insert into message_attachments(message_id, attachment_id) values (?,?)";
+		PreparedStatement stmt;
+		try {
+			stmt = connection.prepareStatement(associateAttachment);
+			//this makes no sense if the ids are not specified
+			stmt.setLong(1, Long.parseLong(message.getId()));				
+			stmt.setLong(2, Long.parseLong(attachment.getId()));
+			stmt.executeUpdate();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return false;
+	}
 	private Attachment writeAttachment(Attachment attachment) {
-		String sqlWriteAttachment = "insert into message_attachments(message_id, filename, length, extension) values (?,?,?,?)";
+		String sqlWriteAttachment = "insert into attachments(filename, length, extension) values (?,?,?)";
 		try {
 			PreparedStatement stmt = connection.prepareStatement(sqlWriteAttachment,Statement.RETURN_GENERATED_KEYS);
-			if(attachment.getMessageId()==null) {
-				stmt.setNull(1, Types.BIGINT);				
-			}else {
-				stmt.setLong(1, Long.parseLong(attachment.getMessageId()));				
-			}
-			stmt.setString(2, attachment.getFilename());
+			stmt.setString(1, attachment.getFilename());
 			if(attachment.getLength()!=null) {
-				stmt.setLong(3, attachment.getLength());				
+				stmt.setLong(2, attachment.getLength());				
 			}else {
-				stmt.setNull(3, Types.BIGINT);
+				stmt.setNull(2, Types.BIGINT);
 			}
-			stmt.setString(4, attachment.getExtension());
+			stmt.setString(3, attachment.getExtension());
 			stmt.executeUpdate();
 			ResultSet rs = stmt.getGeneratedKeys();
 			rs.next();
@@ -394,22 +403,17 @@ public class NaiveMessageStore implements MessageStore {
 	}
 	@Override
 	public Attachment updateAttachment(Attachment attachment) {
-		String sqlWriteAttachment = "update message_attachments set message_id=?, filename=?, length=?, extension=? where id=?";
+		String sqlWriteAttachment = "update attachments set filename=?, length=?, extension=? where id=?";
 		try {
 			PreparedStatement stmt = connection.prepareStatement(sqlWriteAttachment,Statement.RETURN_GENERATED_KEYS);
-			if(attachment.getMessageId()==null) {
-				stmt.setNull(1, Types.BIGINT);				
-			}else {
-				stmt.setLong(1, Long.parseLong(attachment.getMessageId()));				
-			}
-			stmt.setString(2, attachment.getFilename());
+			stmt.setString(1, attachment.getFilename());
 			if(attachment.getLength()!=null) {
-				stmt.setLong(3, attachment.getLength());				
+				stmt.setLong(2, attachment.getLength());				
 			}else {
-				stmt.setNull(3, Types.BIGINT);
+				stmt.setNull(2, Types.BIGINT);
 			}
-			stmt.setString(4, attachment.getExtension());
-			stmt.setLong(5, Long.parseLong(attachment.getId()));
+			stmt.setString(3, attachment.getExtension());
+			stmt.setLong(4, Long.parseLong(attachment.getId()));
 			stmt.executeUpdate();
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
@@ -438,21 +442,22 @@ public class NaiveMessageStore implements MessageStore {
 		}
 
 	@Override
-	public Attachment readAttachment(Message message) {
-		String sqlGetAttachment = "select * from message_attachments where message_id = ?";
+	public List<Attachment> readAttachments(Message message) {
+		String sqlGetAttachment = "select * from attachments, message_attachments where attachments.id = message_attachments.attachment_id and message_attachments.message_id = ?";
 		try {
 			PreparedStatement stmt = connection.prepareStatement(sqlGetAttachment);
 			stmt.setLong(1, Long.parseLong(message.getId()));
 			ResultSet rs = stmt.executeQuery();
-			if(rs!=null && rs.next()) {
+			List<Attachment> attachments = new LinkedList<Attachment>();
+			while(rs!=null && rs.next()) {
 				Attachment attachment = new Attachment();
-				attachment.setMessageId(message.getId());
 				attachment.setFilename(rs.getString("filename"));
 				attachment.setLength(rs.getLong("length"));
 				attachment.setId(""+rs.getLong("id"));
 				attachment.setExtension(rs.getString("extension"));
-				return attachment;
+				attachments.add(attachment);
 			}
+			return attachments;
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
