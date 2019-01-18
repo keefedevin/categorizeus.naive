@@ -356,7 +356,6 @@ public class NaiveMessageStore implements MessageStore {
 
 	@Override
 	public Attachment createAttachment(Attachment attachment, InputStream inputStream) {
-		String fn = attachment.getFilename();
 		attachment = writeAttachment(attachment);
 		String uploadLocation = fileBase+attachment.getId()+attachment.getExtension();
 		writeToFile(inputStream, uploadLocation);
