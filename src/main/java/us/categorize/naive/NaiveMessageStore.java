@@ -11,6 +11,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -450,10 +451,7 @@ public class NaiveMessageStore implements MessageStore {
 			List<Attachment> attachments = new LinkedList<Attachment>();
 			while(rs!=null && rs.next()) {
 				Attachment attachment = new Attachment();
-				attachment.setFilename(rs.getString("filename"));
-				attachment.setLength(rs.getLong("length"));
-				attachment.setId(""+rs.getLong("id"));
-				attachment.setExtension(rs.getString("extension"));
+				mapAttachmentRow(rs, attachment);
 				attachments.add(attachment);
 			}
 			return attachments;
@@ -462,6 +460,13 @@ public class NaiveMessageStore implements MessageStore {
 			e.printStackTrace();
 		}
 		return null;
+	}
+
+	private void mapAttachmentRow(ResultSet rs, Attachment attachment) throws SQLException {
+		attachment.setFilename(rs.getString("filename"));
+		attachment.setLength(rs.getLong("length"));
+		attachment.setId(""+rs.getLong("id"));
+		attachment.setExtension(rs.getString("extension"));
 	}
 
 	public int getDefaultPageOn() {
@@ -478,5 +483,65 @@ public class NaiveMessageStore implements MessageStore {
 
 	public void setDefaultPageSize(int defaultPageSize) {
 		this.defaultPageSize = defaultPageSize;
+	}
+
+	@Override
+	public boolean signAttachment(Attachment attachment, String signature) {
+		String signAttachment = "insert into attachment_signatures(attachment_id, signature) values (?,?)";
+		try {
+			PreparedStatement stmt = connection.prepareStatement(signAttachment);
+			stmt.setLong(1, Long.parseLong(attachment.getId()));
+			stmt.setString(2, signature);
+			stmt.executeUpdate();
+			return true;
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return false;
+	}
+
+	@Override
+	public Attachment findSignedAttachment(String signature) {
+		String findAttachment = "select * from attachments, attachment_signatures where id = attachment_id and signature = ?";
+		try {
+			PreparedStatement stmt = connection.prepareStatement(findAttachment);
+			stmt.setString(1, signature);
+			ResultSet rs = stmt.executeQuery();
+			if(rs!=null && rs.next()) {
+				Attachment attachment = new Attachment();
+				mapAttachmentRow(rs, attachment);
+				return attachment;
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		return null;
+	}
+
+	@Override
+	public Attachment[] findAssociatedAttachments(Attachment attachment) {
+		String findAssociatedAttachments = "select * from message_attachments where attachment_id = ?";
+		try {
+			PreparedStatement stmt = connection.prepareStatement(findAssociatedAttachments);
+			stmt.setLong(1, Long.parseLong(attachment.getId()));
+			List<Long> messageIds = new LinkedList<Long>();
+			ResultSet rs = stmt.executeQuery();
+			while(rs!=null && rs.next()) {
+				messageIds.add(rs.getLong("message_id"));
+			}
+			if(messageIds.size() > 0 ) {
+				Message dummy = new Message();
+				dummy.setId(messageIds.get(0)+"");
+				List<Attachment> attached = readAttachments(dummy);
+				return attached.toArray(new Attachment[attached.size()]);
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return new Attachment[] {attachment};
 	}
 }
