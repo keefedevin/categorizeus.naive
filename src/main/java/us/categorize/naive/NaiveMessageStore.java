@@ -11,7 +11,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -21,6 +20,7 @@ import us.categorize.model.Attachment;
 import us.categorize.model.Message;
 import us.categorize.model.MetaMessage;
 import us.categorize.model.Tag;
+import us.categorize.model.TagQuery;
 import us.categorize.model.User;
 
 public class NaiveMessageStore implements MessageStore {
@@ -78,8 +78,86 @@ public class NaiveMessageStore implements MessageStore {
 			stmt.setLong(5, Long.parseLong(message.getRootRepliesTo()));			
 		}
     }
-
 	@Override
+	public Message[] tagSearch(TagQuery query) {
+		
+		Tag[] tags = tagsToObjects(query.getTags());
+		Long tagIds[] = new Long[tags.length];
+		String questions = "";
+		for(int i=0; i<tags.length;i++) {
+			tagIds[i] = Long.parseLong(tags[i].getId());
+			if(i!=0) questions = questions+",";//TODO obviously gnarly but don't optimize yet
+			questions = questions+"?";
+		}
+	
+		String tagSearch = "select messages.* from messages, message_tags "
+				+ "where messages.replies_to is null and messages.id = message_tags.message_id ";
+		String tagClause = "";
+		if(tags.length==0) {
+			tagSearch = "select messages.* from messages where messages.replies_to is null ";
+		}else {
+			tagClause = "and tag_id in ("+questions+") ";
+		}
+		
+		String positionClause = "";
+		String sort = "desc";
+		if("asc".equals(query.getSort())){
+			sort = "asc";
+		}
+		if(query.getBefore()!=null) {
+			positionClause = positionClause + "and messages.id<? ";
+		}
+		if(query.getAfter()!=null) {
+			positionClause = positionClause + "and messages.id>? ";
+		}
+		String groupByClause = "";
+		if(tags.length>0) {
+			groupByClause = "group by messages.id having count(*) = ?";
+		}
+		String orderClause = " order by messages.id " + sort + " limit ? ";
+		
+		tagSearch = tagSearch + tagClause + positionClause + groupByClause + orderClause;
+		System.out.println(tagSearch);
+		
+		try {
+			PreparedStatement stmt = connection.prepareStatement(tagSearch);
+			//Array arr = stmt.getConnection().createArrayOf("bigint", tagIds);
+			//  Hint: No operator matches the given name and argument types. You might need to add explicit type casts.
+			//org.postgresql.util.PSQLException: ERROR: operator does not exist: bigint = bigint[]
+			int i = 0;
+			for(i=0; i<tags.length;i++) {
+				stmt.setLong(i+1, Long.parseLong(tags[i].getId()));
+			}
+			if(query.getBefore()!=null) {
+				stmt.setLong(i+1, Long.parseLong(query.getBefore()));//TODO exception
+				i++;
+			}
+			if(query.getAfter()!=null) {
+				stmt.setLong(i+1, Long.parseLong(query.getAfter()));
+				i++;
+			}
+			
+			if(tags!=null && tags.length>0) {
+				stmt.setInt(i+1, tags.length);
+				i++;
+			}
+
+			stmt.setInt(i+1, query.getCount());//+1 for 1 based index on paramters in prepared statements
+
+			ResultSet rs = stmt.executeQuery();
+			List<Message> messages = new LinkedList<>();
+			while(rs.next()) {
+				messages.add(mapMessageRow(new Message(), rs));
+			}
+			Message messageArr[] = messages.toArray(new Message[messages.size()]);
+			return messageArr;
+			
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+	}
 	public Message[] tagSearch(String[] tagStrings, Integer pageOn, Integer pageSize) {
 		if(pageOn==null) pageOn = defaultPageOn;
 		if(pageSize==null) pageSize = defaultPageSize;
@@ -128,9 +206,10 @@ public class NaiveMessageStore implements MessageStore {
 		}
 		return null;
 	}
+	
 	@Override
-	public MetaMessage[] tagSearchFull(String[] tags, Integer pageOn, Integer pageSize) {
-		Message[] messages = tagSearch(tags, pageOn, pageSize);
+	public MetaMessage[] tagSearchFull(TagQuery query) {
+		Message[] messages = tagSearch(query);
 		MetaMessage[] fullMessages = new MetaMessage[messages.length];
 		for(int i=0; i<messages.length;i++) {
 			fullMessages[i] = readMessageMetadata(messages[i]);
