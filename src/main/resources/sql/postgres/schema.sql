@@ -14,6 +14,7 @@ drop table if exists message_tags;
 drop table if exists user_sessions;
 drop table if exists attachments;
 drop table if exists message_attachments;
+drop table if exists attachment_signatures;
 
 
 create table if not exists tags(
@@ -38,6 +39,10 @@ create table if not exists attachments(
 	filename text,
 	extension text,
 	length bigint
+);
+create table if not exists attachment_signatures(
+	attachment_id bigint,
+	signature text
 );
 
 create table if not exists users(
