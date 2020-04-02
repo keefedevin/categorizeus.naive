@@ -76,4 +76,6 @@ create index message_attachments_message on message_attachments(message_id);
 create index message_attachments_attachment on message_attachments(attachment_id);
 create index message_root_replies on messages(root_replies_to);
 create unique index taglookup on tags(tag);
+#  GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO categorizeus;
+#  GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO categorizeus;
 
